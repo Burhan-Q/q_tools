@@ -1,0 +1,15 @@
+# pinned by Snyk to avoid a vulnerability
+numpy>=1.22.2
+opencv-python>=4.6.0
+pillow
+pyyaml
+requests
+pandas
+# system utilization
+psutil
+# display CPU info
+py-cpuinfo
+opencv-contrib-python
+# plotly
+
+# poetry add $( cat requirements.txt | Where-Object {$_ -notlike "" -and $_ -notlike "#*"} ) # Install from text file
