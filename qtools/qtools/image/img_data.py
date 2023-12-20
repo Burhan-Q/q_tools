@@ -1,3 +1,9 @@
+'''
+Author: Burhan Qaddoumi
+Source: github.com/Burhan-Q
+
+Requires: PyYaml, joblib
+'''
 import random
 from pathlib import Path
 from dataclasses import dataclass
@@ -14,23 +20,6 @@ class Formats:
     yolo = '.txt'
     voc = '.xml'
     coco = '.json'
-
-# def imgs_N_labels(imgs:list[Path], lbls:list[Path]) -> list[tuple[Path,Path|None]]:
-#     """Pairs matching image and label files, if no label file is found, returns image file with `None` instead."""
-#     pairs = list()
-#     _lbls = lbls.copy()
-#     for n in range(len(imgs)):
-#         i, l = imgs[n], _lbls[n]
-#         m = i.stem == l.stem
-#         if not m:
-#             p = [li for li,L in enumerate(lbls) if L.stem == i.stem]
-#             l = lbls.pop(p[0]) if any(p) else None
-#         _ = pairs.append((i, l))
-#     return pairs
-
-# def get_im_lbl(img:Path, lbls:list[Path]) -> tuple[Path,Path|None]:
-#     idx = [li for li,l in enumerate(lbls) if img.stem == l.stem]
-#     return img, lbls.pop(idx[0]) if any(idx) else None
 
 def file_ext(ext:str):
     """Ensures text string for file extensions start with `.` character."""
