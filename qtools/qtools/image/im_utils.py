@@ -204,6 +204,7 @@ def eq_crops_w_coords(img_in:str|Path|np.ndarray,
     return out
 
 def clip2region(xmin:int, ymin:int, xmax:int, ymax:int, boxes:np.ndarray):
+    # TODO write docstring
     b1, b2, b3, b4 = np.split(boxes, 4, 1)
 
     keep_b1, keep_b3 = b1.clip(xmin,xmax), b3.clip(xmin,xmax)
@@ -218,7 +219,7 @@ def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
                     vert_only:bool = True,
                     horz_only:bool = True,
                     pad_color:int|tuple = 0):
-    
+    # TODO write docstring
     horz_and_vert = vert_only and horz_only
     assert horz_and_vert or vert_only or horz_only, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
     nsplit = abs(int(round(nsplit))) # ensure no negative values
