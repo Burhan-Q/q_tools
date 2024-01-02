@@ -187,8 +187,8 @@ def eq_crops_w_coords(img_in:str|Path|np.ndarray,
     if not horz_and_vert and (vert_only or horz_only):
         total_out = nsplit
         split_idx = split_idx[::nsplit] if horz_only else split_idx[:nsplit:]
-        h_split = round(h / nsplit) if horz_only else h # full width, y-axis slicing
-        v_split = round(w/ nsplit) if vert_only else w # full width, x-axis slicing
+        h_split = round(h / nsplit) if horz_only else h # full width, split on y-axis
+        v_split = round(w/ nsplit) if vert_only else w # full height, split on x-axis
     elif horz_and_vert:
         total_out = nsplit ** 2
         h_split = round(h / nsplit) # y-axis slicing
@@ -216,12 +216,36 @@ def clip2region(xmin:int, ymin:int, xmax:int, ymax:int, boxes:np.ndarray):
 def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
                     nsplit:int,
                     boxes:np.ndarray=None, # only uses xyxy format
-                    vert_only:bool = True,
-                    horz_only:bool = True,
+                    vert_slice:bool = True,
+                    horz_slice:bool = True,
                     pad_color:int|tuple = 0):
-    # TODO write docstring
-    horz_and_vert = vert_only and horz_only
-    assert horz_and_vert or vert_only or horz_only, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
+    """
+    Usage
+    ---
+    Slice or crop an image into multiple sub-images and retains bounding box information for annotations contained within each sliced region. May be useful for dataset training with high-resolution images that need to be sliced into smaller sections.
+    
+    ⚠ CAUTION ⚠
+    ---
+    This function has no awareness of object extent, so an annotation may be present for an object that is not visible in a slice. This can happen when an object is extended at one end (like someone walking with an outstretched leg).
+
+    Arguments
+    ---
+    img_in : input image as file path ``str`` or ``pathlib.Path`` or as ``np.ndarray``
+    nsplit : ``int`` number of slices to make for image. See NOTE below
+    boxes : bounding boxes as ``np.ndarray`` using `xyxy` (xy-min, xy-max) format of all object annotations for `img_in`
+    vert_slice : ``bool`` to enable vertical image slicing (full height). Default is ``True``
+    horz_slice : ``bool`` to enable horizontal image slicing (full width). Default is ``True``
+    
+        NOTE when `vert_slice == horz_slice == True` image will be cropped equally in both directions and output with consist of `nsplit^2` slices
+
+    pad_color : color to use for image padding as ``int`` or ``tuple``. When using ``int``, values are repeated for all channels for `img_in`. Default is 0 and will pad with `(0, 0, 0)` for 3-channel images.
+
+    Returns
+    ---
+    Outputs a nested ``dict`` containing ``int`` keys equal to the total number of slices/crops with a ``dict`` value. The ``dict`` value will contain a key `crop` for the cropped/sliced image ``np.ndarray`` and `boxes` for the bounding boxes as ``np.ndarray`` captured by the corresponding image slice/crop.
+    """
+    horz_and_vert = vert_slice and horz_slice
+    assert horz_and_vert or vert_slice or horz_slice, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
     nsplit = abs(int(round(nsplit))) # ensure no negative values
     # TODO add check for `boxes` data and type
     
@@ -231,6 +255,7 @@ def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
     
     assert nsplit != np.nan and 1 < nsplit < min(h,w), f"Number of splits must be positive integer less than the smallest image dimension."
     
+    # Pad image for slicing as needed (determined by image dimensions)
     padding = calc_img_padding((h,w), nsplit)
     pad_color = pad_color if isinstance(pad_color, (tuple, list)) else (pad_color,) * c
     img2split = pad_image(np.copy(img), *padding, padval=pad_color)
@@ -238,21 +263,23 @@ def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
     
     split_idx = np.array([[i,j] for i in range(nsplit) for j in range(nsplit)])
     
-    if not horz_and_vert and (vert_only or horz_only):
+    # Slice image
+    if not horz_and_vert and (vert_slice or horz_slice): # slice single direction
         total_out = nsplit
-        split_idx = split_idx[::nsplit] if horz_only else split_idx[:nsplit:]
-        h_split = round(h / nsplit) if horz_only else h # full width, y-axis slicing
-        v_split = round(w/ nsplit) if vert_only else w # full width, x-axis slicing
-    elif horz_and_vert:
+        split_idx = split_idx[::nsplit] if horz_slice else split_idx[:nsplit:]
+        h_split = round(h / nsplit) if horz_slice else h # full width, split on y-axis 
+        v_split = round(w/ nsplit) if vert_slice else w # full height, split on x-axis
+    elif horz_and_vert: # slice both directions
         total_out = nsplit ** 2
         h_split = round(h / nsplit) # y-axis slicing
         v_split = round(w / nsplit) # x-axis slicing
     
     crops = {i:None for i in range(total_out)}
-
+    
+    # Slice image and boxes
     for ic, (y, x) in enumerate(split_idx):
         c = {'crop':None, 'boxes':None}
-        # Crop image
+        # Slice/crop image
         y_slice, x_slice = y * h_split, x * v_split
         x1, y1, x2, y2 = x_slice, y_slice, x_slice + v_split, y_slice + h_split
         c['crop'] = img2split[y1:y2, x1:x2].astype(in_dtype)
@@ -277,7 +304,7 @@ def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
 # ncxywh = np.loadtxt(txt)
 
 # xyxy = ncxywh2xyxy(np.loadtxt(txt)[...,1:5], h, w)
-# out = eq_crops_w_boxes(img, 4, xyxy) # NOTE currently only supports xyxy format
+# out = eq_crops_w_boxes(img, 5, xyxy) # NOTE currently only supports xyxy format
 
 # for c in out.values():
 #     c_boxes = c.get('boxes')
