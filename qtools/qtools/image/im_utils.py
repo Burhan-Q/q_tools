@@ -32,7 +32,7 @@ def load_img(im:str|Path|np.ndarray, *args, **kwargs) -> np.ndarray:
 
 def im_info(im:str|Path|np.ndarray, *args, **kwargs):
     """Outputs image height, width, channel count (if > 1, otherwise skipped) and `dtype` as ``tuple`` with length 4 if multi-channel or length 3 if single channel."""
-    img = load_img(im)
+    img = load_img(im, *args, **kwargs)
     return tuple(d for d in [*img.shape, img.dtype])
 
 def calc_img_padding(shape:tuple|np.ndarray|list, divisor:int) -> tuple[int,int,int,int]:
@@ -91,24 +91,24 @@ def pad_image(img_in:str|Path|np.ndarray,
 
 def equal_crops(img_in:str|Path|np.ndarray,
                 nsplit:int,
-                vert_only:bool = True,
-                horz_only:bool = True,
+                vert_slice:bool = True,
+                horz_slice:bool = True,
                 pad_color:int|tuple = 0) -> np.ndarray:
     """
     Usage
     ---
-    Creates image crops all equally sized, includes padding as required, slicing image both horizontally and vertically by default.
+    Creates image slices/crops all equally sized, includes padding as required by image dimensions, slicing image both horizontally and vertically by default.
 
     Arguments
     ---
     img_in : input image as ``str``, ``pathlib.Path``, or ``np.ndarray``
     nsplit : number as ``int`` of horizontal and/or vertical crops; EX: `nsplit=4` -> 16 crops
-    vert_only : when ``True`` and `horz_only` is ``False``, outputs `nsplit` number of crops all full image width. Default is ``True``
-    horz_only : when ``True`` and `vert_only` is ``False``, outputs `nsplit` number of crops all full image height. Default is ``True``
+    vert_slice : when ``True`` and `horz_slice` is ``False``, outputs `nsplit` number of crops all full image width. Default is ``True``
+    horz_slice : when ``True`` and `vert_slice` is ``False``, outputs `nsplit` number of crops all full image height. Default is ``True``
     pad_color : color to use for pixel padding, when ``int`` value repeated for all channels, BGR color when ``tuple``. Default is 0 (black border pixels)
     """
-    horz_and_vert = vert_only and horz_only
-    assert horz_and_vert or vert_only or horz_only, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
+    horz_and_vert = vert_slice and horz_slice
+    assert horz_and_vert or vert_slice or horz_slice, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
     nsplit = abs(int(round(nsplit))) # ensure no negative values
     
     img = load_img(img_in)
@@ -126,11 +126,11 @@ def equal_crops(img_in:str|Path|np.ndarray,
     
     split_idx = np.array([[i,j] for i in range(nsplit) for j in range(nsplit)])
     
-    if not horz_and_vert and (vert_only or horz_only):
+    if not horz_and_vert and (vert_slice or horz_slice):
         total_out = nsplit
-        split_idx = split_idx[::nsplit] if horz_only else split_idx[:nsplit:]
-        h_split = round(h / nsplit) if horz_only else h # full width, y-axis slicing
-        v_split = round(w/ nsplit) if vert_only else w # full width, x-axis slicing
+        split_idx = split_idx[::nsplit] if horz_slice else split_idx[:nsplit:]
+        h_split = round(h / nsplit) if horz_slice else h # full width, y-axis slicing
+        v_split = round(w/ nsplit) if vert_slice else w # full width, x-axis slicing
     elif horz_and_vert:
         total_out = nsplit ** 2
         h_split = round(h / nsplit) # y-axis slicing
@@ -147,28 +147,28 @@ def equal_crops(img_in:str|Path|np.ndarray,
 
 def eq_crops_w_coords(img_in:str|Path|np.ndarray,
                         nsplit:int,
-                        vert_only:bool = True,
-                        horz_only:bool = True,
+                        vert_slice:bool = True,
+                        horz_slice:bool = True,
                         pad_color:int|tuple = 0) -> dict[CropCoords]:
     """
     Usage
     ---
-    Creates image crops all equally sized, includes padding as required, slicing image both horizontally and vertically by default. Output includes coordinates from source (or padded source) image for each crop.
+    Creates image slices/crops all equally sized, includes padding as required by image dimensions, slicing image both horizontally and vertically by default. Output includes coordinates from source (or padded source) image for each crop.
 
     Arguments
     ---
     img_in : input image as ``str``, ``pathlib.Path``, or ``np.ndarray``
     nsplit : number as ``int`` of horizontal and/or vertical crops; EX: `nsplit=4` -> 16 crops
-    vert_only : when ``True`` and `horz_only` is ``False``, outputs `nsplit` number of crops all full image width. Default is ``True``
-    horz_only : when ``True`` and `vert_only` is ``False``, outputs `nsplit` number of crops all full image height. Default is ``True``
+    vert_slice : when ``True`` and `horz_slice` is ``False``, outputs `nsplit` number of crops all full image width. Default is ``True``
+    horz_slice : when ``True`` and `vert_slice` is ``False``, outputs `nsplit` number of crops all full image height. Default is ``True``
     pad_color : color to use for pixel padding, when ``int`` value repeated for all channels, BGR color when ``tuple``. Default is 0 (black border pixels)
 
     Returns
     ---
     Output is a ``dict`` with keys matching indices of crops, ordered top-left [0] to bottom-right [`nsplit` ^ 2 - 1], with values as ``CropCoords`` (``dataclass``) objects.
     """
-    horz_and_vert = vert_only and horz_only
-    assert horz_and_vert or vert_only or horz_only, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
+    horz_and_vert = vert_slice and horz_slice
+    assert horz_and_vert or vert_slice or horz_slice, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
     nsplit = abs(int(round(nsplit))) # ensure no negative values
     
     img = load_img(img_in)
@@ -184,11 +184,11 @@ def eq_crops_w_coords(img_in:str|Path|np.ndarray,
     
     split_idx = np.array([[i,j] for i in range(nsplit) for j in range(nsplit)])
     
-    if not horz_and_vert and (vert_only or horz_only):
+    if not horz_and_vert and (vert_slice or horz_slice):
         total_out = nsplit
-        split_idx = split_idx[::nsplit] if horz_only else split_idx[:nsplit:]
-        h_split = round(h / nsplit) if horz_only else h # full width, split on y-axis
-        v_split = round(w/ nsplit) if vert_only else w # full height, split on x-axis
+        split_idx = split_idx[::nsplit] if horz_slice else split_idx[:nsplit:]
+        h_split = round(h / nsplit) if horz_slice else h # full width, split on y-axis
+        v_split = round(w/ nsplit) if vert_slice else w # full height, split on x-axis
     elif horz_and_vert:
         total_out = nsplit ** 2
         h_split = round(h / nsplit) # y-axis slicing
@@ -242,7 +242,7 @@ def eq_crops_w_boxes(img_in:str|Path|np.ndarray,
 
     Returns
     ---
-    Outputs a nested ``dict`` containing ``int`` keys equal to the total number of slices/crops with a ``dict`` value. The ``dict`` value will contain a key `crop` for the cropped/sliced image ``np.ndarray`` and `boxes` for the bounding boxes as ``np.ndarray`` captured by the corresponding image slice/crop.
+    Outputs a nested ``dict`` containing ``int`` keys equal to the total number of slices/crops with a ``dict`` value, keys are zero-indexed and start at top-left of image and end at bottom-right. The ``dict`` value will contain a key `crop` for the cropped/sliced image ``np.ndarray`` and `boxes` for the bounding boxes as ``np.ndarray`` captured by the corresponding image slice/crop.
     """
     horz_and_vert = vert_slice and horz_slice
     assert horz_and_vert or vert_slice or horz_slice, f"Must provide at least one ``True`` value for `vert_only` or `horz_only` arguments is required."
