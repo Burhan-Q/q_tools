@@ -27,12 +27,16 @@ def file_ext(ext:str):
 
 def im2lbl(im:Path, idir:str='images', ldir:str='labels', l_ext:str='.txt'):
     """Uses heuristic of swapping image directory `idir` (default='images') name with label directory `ldir` (default='labels') and label file extension `l_ext` (default='.txt') to specify a label file for a particular image file."""
-    return Path(Path(im).as_posix().replace(f'{idir}', f'{ldir}')).with_suffix(f'{l_ext}')
+    return Path(str(im).replace(f'{idir}', f'{ldir}')).with_suffix(f'{l_ext}')
 
 def look4lbl_w_img(img:Path, l_ext:str='.txt'):
     """Takes an image ``pathlib.Path`` object and will check for any label files."""
     labels = list(Path(img).parent.glob(f"*{l_ext}"))
     return labels if any(labels) else []
+
+def get_data(file:Path):
+        """Loads annoation file, splits new lines and splits again on space-character, casts all data as ``float`` during split."""
+        return [[float(v) for v in l.split(" ")] for l in file.read_text("utf-8").split("\n") if l != ""]
 
 def im_lbl_pair(ims:list[Path],
                 lbls:list[Path],
@@ -208,10 +212,11 @@ class ImgData:
             # self._all_lbls = sorted(set(l for l in self.path.rglob(f'*{self.frmt_ext}')))
             # if not (any(self._all_imgs) and any(self._all_lbls)):
             if not any(self._all_imgs):
-                print(f"No images with extension(s) {tuple(e for e in self.img_ext)} found in {self.path.as_posix()}.")
+                print(f"No images with extension(s) {tuple(e for e in self.img_ext)} found in {str(self.path)}.")
                 self.error = True
         elif not self.error and self.data_yaml.exists():
             ... # TODO
+    
     def _idx_files(self):
         """Creates dataset dictionary using indices as keys, populated using the full dataset."""
         if not self.error and hasattr(self, 'dataset'):
